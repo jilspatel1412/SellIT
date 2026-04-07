@@ -113,6 +113,104 @@ def _get_intent_secret(intent_id):
         return None
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_payment(request):
+    """
+    Frontend calls this after stripe.confirmCardPayment succeeds.
+    Verifies the PaymentIntent status with Stripe and updates the order.
+    This ensures payment is recorded even without a webhook configured.
+    """
+    order_id = request.data.get('order_id')
+    if not order_id:
+        return Response({'error': 'order_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        order = Order.objects.select_related('listing', 'buyer', 'seller').get(pk=order_id, buyer=request.user)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if order.status == 'paid':
+        return Response({'message': 'Already paid.', 'status': 'paid'})
+
+    if order.status != 'pending_payment':
+        return Response({'error': 'Order is not awaiting payment.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Verify with Stripe that the payment actually succeeded
+    try:
+        payment = Payment.objects.get(order=order)
+    except Payment.DoesNotExist:
+        return Response({'error': 'No payment record found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        intent = stripe.PaymentIntent.retrieve(payment.stripe_payment_intent_id)
+    except stripe.error.StripeError:
+        return Response({'error': 'Could not verify payment. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    if intent.status != 'succeeded':
+        return Response({'error': f'Payment not completed. Status: {intent.status}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Payment verified — update records
+    payment.status = 'succeeded'
+    payment.save(update_fields=['status'])
+
+    order.status = 'paid'
+    order.escrow_status = 'held'
+    order.save(update_fields=['status', 'escrow_status'])
+
+    Receipt.objects.get_or_create(order=order)
+
+    create_notification(
+        order.buyer, 'order_paid',
+        f'Payment confirmed for "{order.listing.title}"',
+        f'Your payment of ${order.total_amount} was successful. Order #{order.id}.',
+        '/buyer/orders'
+    )
+    create_notification(
+        order.seller, 'order_paid',
+        f'New sale: "{order.listing.title}"',
+        f'{order.buyer.username} paid ${order.total_amount}. Ship the item.',
+        '/seller/orders'
+    )
+
+    # Send confirmation emails
+    from notifications.emails import order_confirmed_buyer, order_confirmed_seller
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    send_email(
+        recipient=order.buyer.email,
+        subject=f'Order Confirmed — {order.listing.title}',
+        body=(
+            f'Hi {order.buyer.username},\n\n'
+            f'Your payment of ${order.total_amount} for "{order.listing.title}" was successful!\n'
+            f'Order #{order.id} is now confirmed.\n\nSellIt Team'
+        ),
+        html=order_confirmed_buyer(
+            order.buyer.username, order.listing.title,
+            order.total_amount, order.id, frontend_url,
+        ),
+    )
+    buyer = order.buyer
+    buyer_addr_parts = [buyer.address_line1, buyer.city, buyer.state_province, buyer.postal_code, buyer.country]
+    buyer_addr = ', '.join(p for p in buyer_addr_parts if p and p.strip()) or 'No address on file'
+    send_email(
+        recipient=order.seller.email,
+        subject=f'New sale — {order.listing.title}',
+        body=(
+            f'Hi {order.seller.username},\n\n'
+            f'{buyer.username} has paid for "{order.listing.title}".\n'
+            f'Amount: ${order.total_amount} | Order #{order.id}\n\n'
+            f'SHIP TO:\n{buyer.username}\n{buyer_addr}\n\nSellIt Team'
+        ),
+        html=order_confirmed_seller(
+            order.seller.username, buyer.username, order.listing.title,
+            order.total_amount, order.id, buyer_addr, frontend_url,
+        ),
+    )
+
+    return Response({'message': 'Payment confirmed.', 'status': 'paid'})
+
+
 @csrf_exempt
 @require_POST
 def stripe_webhook(request):

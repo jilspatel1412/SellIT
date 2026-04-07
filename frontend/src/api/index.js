@@ -149,6 +149,7 @@ export const notificationAPI = {
 // ─── Payments ──────────────────────────────────────────────────────────────
 export const paymentAPI = {
   createIntent: (orderId) => api.post('/api/payments/create-intent/', { order_id: orderId }),
+  confirm: (orderId) => api.post('/api/payments/confirm/', { order_id: orderId }),
 }
 
 // ─── Messages ──────────────────────────────────────────────────────────────

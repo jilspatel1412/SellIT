@@ -39,6 +39,12 @@ function CheckoutForm({ order, clientSecret }) {
       if (result.error) {
         setError(result.error.message)
       } else if (result.paymentIntent.status === 'succeeded') {
+        // Confirm payment with our backend (updates order status even without webhook)
+        try {
+          await paymentAPI.confirm(order.id)
+        } catch {
+          // Webhook will handle it as fallback
+        }
         setSuccess(true)
         setTimeout(() => navigate('/buyer/orders'), 3000)
       }
