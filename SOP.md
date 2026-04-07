@@ -44,7 +44,6 @@
 12. [Environment Configuration](#12-environment-configuration)
 13. [Scheduled Maintenance Tasks](#13-scheduled-maintenance-tasks)
 14. [Software Development Lifecycle](#14-software-development-lifecycle)
-15. [Appendix A — Technical Q&A Reference](#15-appendix-a--technical-qa-reference)
 
 ---
 
