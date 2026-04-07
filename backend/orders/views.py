@@ -71,16 +71,37 @@ def create_payment_intent(request):
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
-    # Reuse existing payment intent if exists
+    # Check existing payment intent
     if hasattr(order, 'payment'):
-        client_secret = _get_intent_secret(order.payment.stripe_payment_intent_id)
-        if not client_secret:
-            return Response({'error': 'Payment service unavailable. Please try again.'}, status=status.HTTP_502_BAD_GATEWAY)
-        return Response({
-            'client_secret': client_secret,
-            'order_id': order.id,
-            'amount': str(order.total_amount),
-        })
+        try:
+            intent = stripe.PaymentIntent.retrieve(order.payment.stripe_payment_intent_id)
+        except stripe.error.StripeError:
+            intent = None
+
+        if intent and intent.status == 'succeeded':
+            # Payment already went through — just update our records
+            order.payment.status = 'succeeded'
+            order.payment.save(update_fields=['status'])
+            order.status = 'paid'
+            order.escrow_status = 'held'
+            order.save(update_fields=['status', 'escrow_status'])
+            Receipt.objects.get_or_create(order=order)
+            return Response({
+                'already_paid': True,
+                'order_id': order.id,
+                'message': 'Payment was already completed successfully.',
+            })
+
+        if intent and intent.status in ('requires_payment_method', 'requires_confirmation', 'requires_action'):
+            # Intent is still usable — return its client secret
+            return Response({
+                'client_secret': intent.client_secret,
+                'order_id': order.id,
+                'amount': str(order.total_amount),
+            })
+
+        # Intent is in a terminal/failed state — delete old payment and create fresh one
+        order.payment.delete()
 
     amount_cents = int(order.total_amount * 100)
     try:

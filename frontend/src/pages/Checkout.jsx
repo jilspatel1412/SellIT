@@ -99,7 +99,13 @@ export default function Checkout() {
       if (o.status === 'paid') { navigate('/buyer/orders'); return }
       return paymentAPI.createIntent(orderId)
     }).then(res => {
-      if (res) setClientSecret(res.data.client_secret)
+      if (!res) return
+      if (res.data.already_paid) {
+        // Payment was already completed — redirect
+        navigate('/buyer/orders')
+        return
+      }
+      setClientSecret(res.data.client_secret)
     }).catch(err => {
       setError(err.response?.data?.error || 'Failed to load checkout.')
     }).finally(() => setLoading(false))
