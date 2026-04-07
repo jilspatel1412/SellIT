@@ -20,8 +20,8 @@ from notifications.utils import send_email, create_notification
 
 
 def _can_sell(user):
-    """Sellers and admins can create/manage listings."""
-    return user.role in ('seller', 'admin')
+    """Only sellers can create/manage listings."""
+    return user.role == 'seller'
 from orders.models import Order, Payment
 from users.models import BlockedUser
 from .models import Category, Listing, ListingImage, Offer, Bid, SearchLog, UserInteraction, ListingReport, SearchAlert
@@ -642,6 +642,8 @@ def buy_now(request, pk):
     except Listing.DoesNotExist:
         return Response({'error': 'Listing not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+    if request.user.role == 'admin':
+        return Response({'error': 'Admin accounts cannot make purchases.'}, status=status.HTTP_403_FORBIDDEN)
     if listing.seller == request.user:
         return Response({'error': 'You cannot buy your own listing.'}, status=status.HTTP_400_BAD_REQUEST)
     if listing.is_auction:

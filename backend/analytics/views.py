@@ -13,7 +13,7 @@ from orders.models import Order
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def search_trends(request):
-    if request.user.role not in ('seller', 'admin'):
+    if request.user.role != 'seller':
         return Response({'error': 'Sellers only.'}, status=403)
 
     # Last 7 weeks of search trends
@@ -46,7 +46,7 @@ def search_trends(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def revenue(request):
-    if request.user.role not in ('seller', 'admin'):
+    if request.user.role != 'seller':
         return Response({'error': 'Sellers only.'}, status=403)
 
     user = request.user

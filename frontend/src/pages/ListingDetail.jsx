@@ -188,6 +188,7 @@ export default function ListingDetail() {
   if (!listing) return null
 
   const isSeller = user && listing.seller_info?.id === user.id
+  const isAdmin = user && user.role === 'admin'
   const conditionClass = { new: 'badge-new', used: 'badge-used', refurbished: 'badge-refurbished' }[listing.condition]
 
   return (
@@ -328,8 +329,8 @@ export default function ListingDetail() {
                 </div>
               )}
 
-              {/* Buyer actions */}
-              {!isSeller && listing.status === 'active' && (
+              {/* Buyer actions — hidden for admin */}
+              {!isSeller && !isAdmin && listing.status === 'active' && (
                 <>
                   {listing.is_auction && !auctionEnded && (
                     <BidForm listing={listing} onBidPlaced={() => {
@@ -366,7 +367,7 @@ export default function ListingDetail() {
               )}
 
               {/* Favourite button */}
-              {!isSeller && (
+              {!isSeller && !isAdmin && (
                 <button
                   onClick={toggleFavorite}
                   disabled={favLoading}
