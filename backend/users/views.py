@@ -29,6 +29,14 @@ from .serializers import (
 
 
 class VerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Embed role in JWT so the frontend can read it without extra API calls
+        token['role'] = user.role
+        token['username'] = user.username
+        return token
+
     def validate(self, attrs):
         data = super().validate(attrs)
         if not self.user.is_verified:
@@ -41,6 +49,15 @@ class VerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
                 '2fa_required': True,
                 'message': 'Two-factor authentication code required.',
             })
+        # Include user data in login response — saves an extra /me/ API call
+        data['user'] = {
+            'id': self.user.id,
+            'username': self.user.username,
+            'email': self.user.email,
+            'role': self.user.role,
+            'is_verified': self.user.is_verified,
+            'is_2fa_enabled': self.user.is_2fa_enabled,
+        }
         return data
 
 
@@ -557,10 +574,18 @@ def login_2fa(request):
     if not totp.verify(code, valid_window=1):
         return Response({'error': 'Invalid 2FA code.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Issue JWT tokens
-    refresh = RefreshToken.for_user(user)
+    # Issue JWT tokens with embedded role
+    refresh = VerifiedTokenObtainPairSerializer.get_token(user)
     log_activity(user, 'login', request)
     return Response({
         'access': str(refresh.access_token),
         'refresh': str(refresh),
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'is_verified': user.is_verified,
+            'is_2fa_enabled': user.is_2fa_enabled,
+        },
     })

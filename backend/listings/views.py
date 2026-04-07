@@ -17,6 +17,11 @@ from .moderation import check_listing
 from .throttles import ListingCreateThrottle
 
 from notifications.utils import send_email, create_notification
+
+
+def _can_sell(user):
+    """Sellers and admins can create/manage listings."""
+    return user.role in ('seller', 'admin')
 from orders.models import Order, Payment
 from users.models import BlockedUser
 from .models import Category, Listing, ListingImage, Offer, Bid, SearchLog, UserInteraction, ListingReport, SearchAlert
@@ -118,8 +123,8 @@ def listing_list_create(request):
             'total_pages': max(1, (total + page_size - 1) // page_size),
         })
 
-    # POST - seller only
-    if request.user.role != 'seller':
+    # POST - seller or admin only
+    if not _can_sell(request.user):
         return Response({'error': 'Only sellers can create listings.'}, status=status.HTTP_403_FORBIDDEN)
 
     # Rate limit listing creation
@@ -612,7 +617,7 @@ def contact_seller(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seller_listings(request):
-    if request.user.role != 'seller':
+    if not _can_sell(request.user):
         return Response({'error': 'Sellers only.'}, status=status.HTTP_403_FORBIDDEN)
     listings = Listing.objects.filter(seller=request.user).prefetch_related('images').select_related('category')
     return Response(ListingSerializer(listings, many=True, context={'request': request}).data)
@@ -621,7 +626,7 @@ def seller_listings(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def seller_offers(request):
-    if request.user.role != 'seller':
+    if not _can_sell(request.user):
         return Response({'error': 'Sellers only.'}, status=status.HTTP_403_FORBIDDEN)
     offers = Offer.objects.filter(listing__seller=request.user).select_related('buyer', 'listing')
     return Response(OfferSerializer(offers, many=True).data)

@@ -79,7 +79,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {user.role === 'seller' && (
+              {(user.role === 'seller' || user.role === 'admin') && (
                 <>
                   <Link to="/seller/dashboard" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Dashboard</Link>
                   <Link to="/seller/listings" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>My Listings</Link>
@@ -87,7 +87,7 @@ export default function Navbar() {
                   <Link to="/seller/orders" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Orders</Link>
                 </>
               )}
-              {user.role === 'buyer' && (
+              {(user.role === 'buyer' || user.role === 'admin') && (
                 <>
                   <Link to="/buyer/orders" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Orders</Link>
                   <Link to="/buyer/favorites" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Favorites</Link>

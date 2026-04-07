@@ -28,6 +28,11 @@ export function AuthProvider({ children }) {
     const { data } = await authAPI.login({ username, password })
     localStorage.setItem('access_token', data.access)
     localStorage.setItem('refresh_token', data.refresh)
+    // Use embedded user data from login response (no extra /me/ call needed)
+    if (data.user) {
+      setUser(data.user)
+      return data.user
+    }
     const me = await authAPI.me()
     setUser(me.data)
     return me.data
@@ -37,6 +42,10 @@ export function AuthProvider({ children }) {
     const { data } = await authAPI.login2fa({ username, password, code })
     localStorage.setItem('access_token', data.access)
     localStorage.setItem('refresh_token', data.refresh)
+    if (data.user) {
+      setUser(data.user)
+      return data.user
+    }
     const me = await authAPI.me()
     setUser(me.data)
     return me.data

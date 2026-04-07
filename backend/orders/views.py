@@ -30,7 +30,10 @@ from .serializers import OrderSerializer, ReviewSerializer, DisputeSerializer
 @permission_classes([IsAuthenticated])
 def order_list(request):
     user = request.user
-    if user.role == 'seller':
+    if user.role == 'admin':
+        # Admin sees all orders
+        orders = Order.objects.all().select_related('listing', 'buyer', 'seller')
+    elif user.role == 'seller':
         orders = Order.objects.filter(seller=user).select_related('listing', 'buyer', 'seller')
     else:
         orders = Order.objects.filter(buyer=user).select_related('listing', 'buyer', 'seller')
