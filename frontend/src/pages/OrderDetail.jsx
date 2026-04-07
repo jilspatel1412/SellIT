@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { orderAPI } from '../api'
+import api from '../api'
 import { useAuth } from '../context/AuthContext'
+
+async function downloadShippingLabel(orderId) {
+  const res = await api.get(`/api/orders/${orderId}/shipping-label/`, { responseType: 'blob' })
+  const url = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `shipping-label-order-${orderId}.pdf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 const STATUS_COLOR = {
   pending_payment: 'var(--yellow)',
@@ -192,7 +203,7 @@ export default function OrderDetail() {
             </button>
           )}
           {(order.status === 'paid' || order.status === 'shipped' || order.status === 'delivered') && (
-            <a className="btn btn-secondary" href={orderAPI.shippingLabel(order.id)} target="_blank" rel="noreferrer">Download Label</a>
+            <button className="btn btn-secondary" onClick={() => downloadShippingLabel(order.id).catch(() => alert('Could not download label.'))}>Download Label</button>
           )}
         </div>
       </div>

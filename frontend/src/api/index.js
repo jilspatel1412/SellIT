@@ -108,7 +108,6 @@ export const bidAPI = {
 export const orderAPI = {
   list: () => api.get('/api/orders/'),
   get: (id) => api.get(`/api/orders/${id}/`),
-  shippingLabel: (id) => `${api.defaults.baseURL}/api/orders/${id}/shipping-label/`,
   updateStatus: (id, data) => api.patch(`/api/orders/${id}/status/`, data),
   createReview: (id, data) => api.post(`/api/orders/${id}/review/`, data),
   sellerReviews: (sellerId) => api.get(`/api/orders/seller/${sellerId}/reviews/`),
