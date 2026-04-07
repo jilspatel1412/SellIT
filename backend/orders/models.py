@@ -43,12 +43,13 @@ class Payment(models.Model):
         ('pending', 'Pending'),
         ('succeeded', 'Succeeded'),
         ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
     ]
 
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
     stripe_payment_intent_id = models.CharField(max_length=255, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

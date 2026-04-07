@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
-from django.db import models
+from django.db import models, transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse
@@ -757,22 +757,23 @@ def dispute_detail(request, dispute_id):
 
     # Process Stripe refund if resolving with refund
     if new_status == 'resolved_refund':
-        try:
-            payment = Payment.objects.get(order=order, status='succeeded')
-            stripe.api_key = settings.STRIPE_SECRET_KEY
-            stripe.Refund.create(payment_intent=payment.stripe_payment_intent_id)
-            payment.status = 'refunded'
-            payment.save()
-        except Payment.DoesNotExist:
-            pass
-        except Exception:
-            logger.exception('Stripe refund failed for order %s', order.id)
-        order.escrow_status = 'refunded'
-        order.save()
+        with transaction.atomic():
+            try:
+                payment = Payment.objects.get(order=order, status='succeeded')
+                stripe.api_key = settings.STRIPE_SECRET_KEY
+                stripe.Refund.create(payment_intent=payment.stripe_payment_intent_id)
+                payment.status = 'refunded'
+                payment.save(update_fields=['status'])
+            except Payment.DoesNotExist:
+                pass
+            except stripe.error.StripeError:
+                logger.exception('Stripe refund failed for order %s', order.id)
+            order.escrow_status = 'refunded'
+            order.save(update_fields=['escrow_status'])
     elif new_status in ('resolved_no_refund', 'closed'):
         if order.escrow_status in ('held', 'disputed'):
             order.escrow_status = 'released'
-            order.save()
+            order.save(update_fields=['escrow_status'])
 
     # Notify both parties on resolution
     if new_status in ('resolved_refund', 'resolved_no_refund', 'closed'):

@@ -199,11 +199,14 @@ export default function EditListing() {
                 />
                 {newImages.length > 0 && (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                    {newImages.map((f, i) => (
-                      <div key={i} style={{ width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--border)' }}>
-                        <img src={URL.createObjectURL(f)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    ))}
+                    {newImages.map((f, i) => {
+                      const url = URL.createObjectURL(f)
+                      return (
+                        <div key={i} style={{ width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--border)' }}>
+                          <img src={url} alt="" onLoad={() => URL.revokeObjectURL(url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>

@@ -577,6 +577,7 @@ def my_favorites(request):
         user=request.user, interaction_type='favorite'
     ).values_list('listing_id', flat=True)
     listings = Listing.objects.filter(id__in=fav_ids, status='active').prefetch_related('images').select_related('seller', 'category')
+    listings = _annotate_listings(listings, request.user)
     return Response(ListingSerializer(listings, many=True, context={'request': request}).data)
 
 
@@ -719,6 +720,10 @@ def accept_auction_bid(request, pk):
         return Response({'error': 'No bids have been placed yet.'}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
+        # Lock listing row to prevent concurrent acceptance
+        listing = Listing.objects.select_for_update().get(pk=pk)
+        if listing.status != 'active':
+            return Response({'error': 'Listing is no longer active.'}, status=status.HTTP_400_BAD_REQUEST)
         listing.status = 'sold'
         listing.save()
 
