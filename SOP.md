@@ -6,8 +6,7 @@
 | **Version** | 2.0 |
 | **Effective Date** | April 7, 2026 |
 | **Classification** | Internal — Engineering |
-| **Prepared By** | Jils Patel, Hetu, Utsav, Hitarth |
-| **Approved By** | Jils Patel — Project Lead |
+| **Prepared By** | Jils Patel, Hetu Patel, Utsav Patel, Hitarth Patel |
 | **Status** | Final |
 
 ---
