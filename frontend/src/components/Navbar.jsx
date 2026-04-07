@@ -79,7 +79,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {(user.role === 'seller' || user.role === 'admin') && (
+              {user.role === 'admin' && (
+                <Link to="/support" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Support Panel</Link>
+              )}
+              {user.role === 'seller' && (
                 <>
                   <Link to="/seller/dashboard" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Dashboard</Link>
                   <Link to="/seller/listings" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>My Listings</Link>
@@ -87,14 +90,11 @@ export default function Navbar() {
                   <Link to="/seller/orders" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Orders</Link>
                 </>
               )}
-              {(user.role === 'buyer' || user.role === 'admin') && (
+              {user.role === 'buyer' && (
                 <>
                   <Link to="/buyer/orders" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Orders</Link>
                   <Link to="/buyer/favorites" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Favorites</Link>
                 </>
-              )}
-              {user.role === 'admin' && (
-                <Link to="/support" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Support Panel</Link>
               )}
               <Link to="/inbox" className="btn btn-ghost btn-sm" onClick={() => setMenuOpen(false)}>Inbox</Link>
 

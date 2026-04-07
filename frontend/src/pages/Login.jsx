@@ -18,7 +18,8 @@ export default function Login() {
     setError(''); setNeedsVerification(false); setLoading(true)
     try {
       const user = await login(form.username, form.password)
-      if (user.role === 'seller' || user.role === 'admin') navigate('/seller/dashboard')
+      if (user.role === 'admin') navigate('/support')
+      else if (user.role === 'seller') navigate('/seller/dashboard')
       else navigate('/')
     } catch (err) {
       const msg = err.response?.data?.detail
@@ -43,7 +44,8 @@ export default function Login() {
     setError(''); setLoading(true)
     try {
       const user = await loginWith2fa(form.username, form.password, totpCode)
-      if (user.role === 'seller' || user.role === 'admin') navigate('/seller/dashboard')
+      if (user.role === 'admin') navigate('/support')
+      else if (user.role === 'seller') navigate('/seller/dashboard')
       else navigate('/')
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid 2FA code.')
