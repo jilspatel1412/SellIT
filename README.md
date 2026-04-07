@@ -111,7 +111,7 @@ SellIT/
 │   ├── vercel.json       # SPA rewrite rules
 │   └── package.json
 │
-└── PROJECT_STUDY.md      # Full technical documentation & Q&A
+└── SOP.md      # Full technical documentation & Q&A
 ```
 
 ---
@@ -322,7 +322,7 @@ Use any future expiry date and any 3-digit CVC.
 | Notifications | `/api/notifications/` | List, mark read |
 | Analytics | `/api/analytics/` | Revenue, search trends |
 
-**54 API endpoints** across 7 modules. Full reference in [PROJECT_STUDY.md](PROJECT_STUDY.md).
+**54 API endpoints** across 7 modules. Full reference in [SOP.md](SOP.md).
 
 ---
 
