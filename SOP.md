@@ -11,16 +11,6 @@
 
 ---
 
-## Revision History
-
-| Version | Date | Author | Description |
-|---|---|---|---|
-| 1.0 | March 2026 | Jils Patel | Initial SOP — core marketplace, auth, payments |
-| 1.5 | March 2026 | All | Added 2FA, moderation, messaging, admin panel |
-| 2.0 | April 7, 2026 | All | Final release — bug fixes, security hardening, deployment |
-
----
-
 ## Table of Contents
 
 1. [Purpose & Scope](#1-purpose--scope)
