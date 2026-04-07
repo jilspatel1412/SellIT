@@ -10,7 +10,8 @@
 
 A production-ready, full-stack peer-to-peer marketplace with escrow payments, two-factor authentication, content moderation, and a complete admin panel. Built with Django REST Framework and React.
 
-> **Live Demo:** [sell-it-kohl.vercel.app](https://sell-it-kohl.vercel.app)
+> **Live Demo:** [https://sell-it-kohl.vercel.app](https://sell-it-kohl.vercel.app)
+> **Backend API:** [https://sellit-ma71.onrender.com](https://sellit-ma71.onrender.com)
 
 ---
 
@@ -30,7 +31,7 @@ A production-ready, full-stack peer-to-peer marketplace with escrow payments, tw
 - Escrow system — funds held until buyer confirms delivery
 - 7-day buyer protection window for disputes
 - Automated escrow release after protection period
-- PDF shipping label generation (4×6 format)
+- PDF shipping label generation (4x6 format with Canada Post style postal code box)
 - Digital receipts
 
 ### Safety & Security
@@ -42,26 +43,28 @@ A production-ready, full-stack peer-to-peer marketplace with escrow payments, tw
 - User blocking with transaction enforcement
 - Buyer reputation scoring based on dispute history
 - Activity logging (login, registration, profile changes with IP tracking)
+- CORS whitelist — only authorized frontend origins accepted
 
 ### Communication
-- Real-time direct messaging with conversation threads
-- 14 notification types (in-app + email via Brevo)
+- Direct messaging with conversation threads
+- 14 notification types (in-app + email via Brevo HTTP API)
 - Unread message and notification badges
+- 11 professionally designed HTML email templates
 
 ### Seller Tools
-- Analytics dashboard with revenue tracking
-- Search trend charts (top keywords, weekly volume)
+- Analytics dashboard with revenue tracking and charts
+- Search trend analysis (top keywords, weekly volume)
 - Listing management (draft, active, sold, closed)
 - Offer management (accept/reject incoming offers)
 - Order fulfillment with tracking numbers
 
-### Admin Panel
+### Admin Panel (Support Panel)
 - Dashboard with platform-wide statistics
 - Dispute resolution (refund / no-refund / close)
 - User management (verify, ban, delete)
 - Listing oversight and removal
 - Report review and dismissal
-- Activity logs with IP addresses
+- Activity logs with IP addresses and user agents
 
 ---
 
@@ -71,13 +74,13 @@ A production-ready, full-stack peer-to-peer marketplace with escrow payments, tw
 |---|---|
 | **Frontend** | React 18, Vite, React Router 6, Axios, Stripe.js, Recharts |
 | **Backend** | Django 5.0, Django REST Framework, SimpleJWT |
-| **Database** | PostgreSQL |
-| **Payments** | Stripe (PaymentIntent API + Webhooks) |
-| **Storage** | Cloudinary (images), WhiteNoise (static files) |
-| **Auth** | JWT (access + refresh), TOTP 2FA (PyOTP + QR Code) |
-| **Email** | Brevo HTTP API (production), SMTP (development) |
+| **Database** | PostgreSQL (Render), SQLite (development) |
+| **Payments** | Stripe (PaymentIntent API + Webhooks + Refunds) |
+| **Storage** | Cloudinary (images via CDN), WhiteNoise (static files) |
+| **Auth** | JWT (access + refresh tokens), TOTP 2FA (PyOTP + QR Code) |
+| **Email** | Brevo HTTP API with 11 custom HTML templates |
 | **PDF** | ReportLab (shipping labels) |
-| **Hosting** | Render (backend), Vercel (frontend) |
+| **Hosting** | Render (backend + PostgreSQL), Vercel (frontend) |
 
 ---
 
@@ -90,10 +93,10 @@ SellIT/
 │   ├── listings/         # Listings, images, offers, bids, search, moderation
 │   ├── orders/           # Orders, payments, escrow, reviews, disputes
 │   ├── messaging/        # Direct messages between users
-│   ├── notifications/    # In-app alerts + email delivery
+│   ├── notifications/    # In-app alerts + email delivery (Brevo)
 │   ├── analytics/        # Seller revenue & search trends
 │   ├── sellit/           # Django settings & URL config
-│   ├── requirements.txt  # Python dependencies
+│   ├── requirements.txt
 │   ├── build.sh          # Render build script
 │   └── Procfile          # Gunicorn process config
 │
@@ -104,23 +107,23 @@ SellIT/
 │   │   ├── context/      # AuthContext (global state)
 │   │   ├── api/          # Axios client + API modules
 │   │   ├── App.jsx       # Router & protected routes
-│   │   └── styles.css    # Design system
+│   │   └── styles.css    # Complete design system (dark theme)
 │   ├── vercel.json       # SPA rewrite rules
-│   └── package.json      # Node dependencies
+│   └── package.json
 │
-└── PROJECT_STUDY.md      # Complete technical documentation
+└── PROJECT_STUDY.md      # Full technical documentation & Q&A
 ```
 
 ---
 
 ## Prerequisites
 
-| Tool | Version | Download |
-|---|---|---|
-| Python | 3.11+ | [python.org](https://www.python.org/downloads/) |
-| Node.js | 18+ | [nodejs.org](https://nodejs.org/) |
-| PostgreSQL | 15+ | [postgresql.org](https://www.postgresql.org/download/) |
-| Git | Any | [git-scm.com](https://git-scm.com/downloads/) |
+| Tool | Version |
+|---|---|
+| Python | 3.11+ |
+| Node.js | 18+ |
+| PostgreSQL | 15+ |
+| Git | Any |
 
 ---
 
@@ -215,17 +218,13 @@ Frontend runs at **http://localhost:5173**
 
 ### 4. Stripe Webhooks (Local)
 
-Payments require Stripe CLI to forward webhooks locally:
-
 ```bash
-# Install: brew install stripe/stripe-cli/stripe (Mac)
-# or download from https://github.com/stripe/stripe-cli/releases
-
+# Install Stripe CLI: brew install stripe/stripe-cli/stripe (Mac)
 stripe login
 stripe listen --forward-to localhost:8000/api/payments/webhook/
 ```
 
-Copy the `whsec_...` secret it outputs into your `backend/.env` as `STRIPE_WEBHOOK_SECRET`.
+Copy the `whsec_...` secret into your `backend/.env` as `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
@@ -240,7 +239,7 @@ Copy the `whsec_...` secret it outputs into your `backend/.env` as `STRIPE_WEBHO
    - **Build Command:** `./build.sh`
    - **Start Command:** `gunicorn sellit.wsgi --log-file -`
 4. Add a **PostgreSQL** database (free tier)
-5. Set environment variables (see [Environment Variables](#environment-variables))
+5. Set environment variables (see below)
 
 ### Frontend → Vercel
 
@@ -254,27 +253,20 @@ Copy the `whsec_...` secret it outputs into your `backend/.env` as `STRIPE_WEBHO
    - `VITE_API_BASE_URL` = your Render backend URL
    - `VITE_STRIPE_PUBLISHABLE_KEY` = your Stripe publishable key
 
-### Stripe Webhook (Production)
-
-1. Go to [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/test/webhooks)
-2. Add endpoint: `https://<your-backend>/api/payments/webhook/`
-3. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`
-4. Copy signing secret → set as `STRIPE_WEBHOOK_SECRET` on Render
-
 ---
 
 ## Environment Variables
 
-### Backend
+### Backend (Render)
 
 | Variable | Description |
 |---|---|
 | `SECRET_KEY` | Django secret key (random string) |
-| `DEBUG` | `True` for development, `False` for production |
+| `DEBUG` | `False` for production |
 | `DATABASE_URL` | PostgreSQL connection string |
-| `ALLOWED_HOSTS` | Comma-separated hostnames |
-| `FRONTEND_URL` | Frontend origin URL |
-| `CORS_ALLOWED_ORIGINS` | Allowed CORS origins |
+| `ALLOWED_HOSTS` | Backend hostname (e.g., `sellit-ma71.onrender.com`) |
+| `FRONTEND_URL` | Frontend URL (e.g., `https://sell-it-kohl.vercel.app`) |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins |
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_test_...`) |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_...`) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
@@ -286,7 +278,7 @@ Copy the `whsec_...` secret it outputs into your `backend/.env` as `STRIPE_WEBHO
 | `ADMIN_EMAIL` | Auto-created admin email |
 | `ADMIN_PASSWORD` | Auto-created admin password |
 
-### Frontend
+### Frontend (Vercel)
 
 | Variable | Description |
 |---|---|
@@ -316,23 +308,36 @@ Use any future expiry date and any 3-digit CVC.
 | `python manage.py settle_auctions` | Close expired auctions and notify winners |
 | `python manage.py release_escrow` | Auto-release escrow after protection period |
 
-`seed_categories` runs automatically via data migration. `settle_auctions` and `release_escrow` should be set up as scheduled tasks (cron) in production.
-
 ---
 
 ## API Overview
 
-| Module | Base Path | Endpoints |
+| Module | Base Path | Key Endpoints |
 |---|---|---|
 | Auth & Users | `/api/auth/` | Register, login, 2FA, profiles, blocking |
 | Listings | `/api/listings/` | CRUD, search, offers, bids, favorites, reports |
 | Orders | `/api/orders/` | Orders, status updates, reviews, disputes |
-| Payments | `/api/payments/` | Stripe intents, webhooks |
+| Payments | `/api/payments/` | Stripe intents, confirmation, webhooks |
 | Messages | `/api/messages/` | Threads, send/receive |
 | Notifications | `/api/notifications/` | List, mark read |
 | Analytics | `/api/analytics/` | Revenue, search trends |
 
-Full API reference with all endpoints, methods, and parameters is available in [PROJECT_STUDY.md](PROJECT_STUDY.md).
+**54 API endpoints** across 7 modules. Full reference in [PROJECT_STUDY.md](PROJECT_STUDY.md).
+
+---
+
+## Project Stats
+
+| Metric | Count |
+|---|---|
+| Backend Django Apps | 6 |
+| Database Models | 20 |
+| API Endpoints | 54 |
+| Frontend Pages | 23 |
+| Reusable Components | 6 |
+| HTML Email Templates | 11 |
+| Notification Types | 14 |
+| Product Categories | 12 |
 
 ---
 
@@ -340,7 +345,7 @@ Full API reference with all endpoints, methods, and parameters is available in [
 
 | Member | Responsibility |
 |---|---|
-| **Jils** | Authentication, security, 2FA, deployment |
+| **Jils Patel** | Authentication, security, 2FA, deployment |
 | **Hetu** | Listings, search, auctions, moderation |
 | **Utsav** | Orders, payments, escrow, reviews |
 | **Hitarth** | Messaging, notifications, disputes, admin panel |
